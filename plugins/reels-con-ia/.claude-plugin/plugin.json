@@ -1,0 +1,8 @@
+{
+  "name": "reels-con-ia",
+  "description": "Edita y anima reels con IA: recortar-silencios (toma cortada en Final Cut) y animar-reels (subtítulos y animaciones 4K con HyperFrames).",
+  "version": "1.0.0",
+  "author": { "name": "Javi Gil" },
+  "homepage": "https://github.com/javiggil/reels-con-ia",
+  "license": "MIT"
+}

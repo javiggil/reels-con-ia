@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" font-family="Helvetica, Arial, sans-serif">
+  <defs><clipPath id="round"><rect x="6" y="6" width="1068" height="1908" rx="54"/></clipPath></defs>
+  <rect x="0" y="0" width="1080" height="1920" rx="60" fill="#0e0e0e"/>
+  <g clip-path="url(#round)">
+    <rect x="6" y="6" width="1068" height="1908" fill="#F4EFE6"/>
+
+    <!-- ZONA SEGURA -->
+    <rect x="60" y="120" width="840" height="1380" fill="#2ece7d" fill-opacity="0.13" stroke="#1f9e5e" stroke-width="5" stroke-dasharray="22 16"/>
+    <text x="480" y="700" fill="#1f9e5e" font-size="60" font-weight="700" text-anchor="middle">ZONA SEGURA</text>
+    <text x="480" y="770" fill="#1f9e5e" font-size="40" text-anchor="middle">pon aquí lo importante</text>
+    <text x="480" y="836" fill="#6A5C55" font-size="34" text-anchor="middle">840 × 1380 px</text>
+    <text x="480" y="884" fill="#6A5C55" font-size="32" text-anchor="middle">(60, 120) → (900, 1500)</text>
+
+    <!-- TOP -->
+    <rect x="0" y="0" width="1080" height="120" fill="#fe4629" fill-opacity="0.16"/>
+    <rect x="430" y="42" width="220" height="10" rx="5" fill="#fe4629" fill-opacity="0.7"/>
+    <text x="60" y="94" fill="#9a2b1c" font-size="33" font-weight="600">ARRIBA  ~120 px · barra de progreso / menú (···)</text>
+
+    <!-- DERECHA -->
+    <rect x="900" y="120" width="180" height="1380" fill="#fe4629" fill-opacity="0.16"/>
+    <g fill="#fe4629" fill-opacity="0.9">
+      <circle cx="990" cy="640" r="36"/><circle cx="990" cy="770" r="36"/><circle cx="990" cy="900" r="36"/>
+      <rect x="956" y="1000" width="68" height="68" rx="16"/>
+    </g>
+    <g fill="#FBF7EE" font-size="36" text-anchor="middle">
+      <text x="990" y="653">♥</text><text x="990" y="783">💬</text><text x="990" y="913">↗</text><text x="990" y="1046">♫</text>
+    </g>
+    <text x="990" y="1240" fill="#9a2b1c" font-size="32" font-weight="600" text-anchor="middle" transform="rotate(90 990 1240)">DERECHA ~180 px · like · comentar · compartir · audio</text>
+
+    <!-- ABAJO -->
+    <rect x="0" y="1500" width="1080" height="420" fill="#fe4629" fill-opacity="0.16"/>
+    <circle cx="96" cy="1582" r="30" fill="#6A5C55"/>
+    <rect x="146" y="1566" width="260" height="30" rx="15" fill="#1C1A17" fill-opacity="0.55"/>
+    <rect x="60" y="1632" width="780" height="24" rx="12" fill="#1C1A17" fill-opacity="0.30"/>
+    <rect x="60" y="1674" width="640" height="24" rx="12" fill="#1C1A17" fill-opacity="0.30"/>
+    <rect x="60" y="1732" width="320" height="26" rx="13" fill="#1C1A17" fill-opacity="0.22"/>
+    <text x="60" y="1858" fill="#9a2b1c" font-size="33" font-weight="600">ABAJO  ~420 px · usuario + caption + audio + CTA</text>
+  </g>
+</svg>

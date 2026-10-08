@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"/>
+<title>Ejemplo OPACO - texto largo quieto y legible</title>
+<link rel="stylesheet" href="demo.css"/>
+<style>
+  html,body{background:#F4EFE6;}
+  #vp{top:190px;height:1040px;}
+  #canvas{width:1080px;height:1920px;}
+  .dots{left:-2000px;top:-2000px;width:6000px;height:6000px;}
+
+  /* la tarjeta del prompt: chat/terminal grande */
+  #pcard{left:60px;top:316px;width:840px;border-radius:26px;}
+  .phd{position:relative;height:64px;background:#151515;display:flex;align-items:center;gap:14px;padding-left:26px;
+       font-family:"JetBrains Mono",ui-monospace,Menlo,monospace;font-size:22px;color:#E8DFC8;}
+  .phd i{width:14px;height:14px;border-radius:50%;background:#fe4629;display:block;}
+  .phd b{color:#FBF7EE;font-weight:600;}
+  .phd em{font-style:normal;color:#8E8378;}
+  .pbody{position:relative;padding:22px 30px 26px;font-family:"InterVar",Inter,sans-serif;font-size:21px;line-height:1.36;
+         color:#1C1A17;font-variation-settings:"wght" 420;}
+  .pbody p{margin:0 0 11px;}
+  .pbody p:last-child{margin:0;}
+  .pbody .st{display:block;padding-left:34px;position:relative;}
+  .pbody .st b{position:absolute;left:0;top:0;color:#fe4629;font-weight:760;font-variation-settings:"wght" 760;}
+  .pbody .ph{color:#354B98;font-style:italic;}
+  #caret{display:inline-block;width:11px;height:23px;background:#fe4629;vertical-align:-4px;margin-left:4px;}
+  #mbox{z-index:30;}
+</style></head>
+<body>
+<div id="root" data-composition-id="c06" data-start="0" data-duration="2.171" data-width="2160" data-height="3840">
+  <div id="stage" class="clip" data-start="0" data-duration="2.171" data-track-index="1">
+    <div class="paper"></div>
+    <div class="world" data-layout-allow-overflow data-layout-allow-overlap>
+      <div id="dotcam"><div class="dots"></div></div>
+      <div id="vp" data-layout-allow-overflow data-layout-allow-overlap>
+      <div id="cam"><div id="canvas" data-layout-allow-overflow data-layout-allow-overlap>
+
+        <div class="ui-card" id="pcard" data-layout-allow-overlap>
+          <div class="phd"><i></i><b>prompt</b><em>· tu asistente</em></div>
+          <div class="pbody" id="pbody">
+            <p>Quiero montar un sistema que me avise cuando entre un pedido grande en mi tienda. Ayúdame por etapas, para <span class="ph">[describe aquí tu tienda y qué cuenta como pedido grande]</span>:</p>
+            <p class="st"><b>1)</b>Explícame cómo conectar mi tienda con una hoja de cálculo para registrar cada pedido nuevo con fecha, importe y producto.</p>
+            <p class="st"><b>2)</b>Escríbeme la regla que decide si un pedido es grande: <span class="ph">[define aquí el importe mínimo y los productos que cuentan]</span>.</p>
+            <p class="st"><b>3)</b>Móntame el aviso automático por correo con una plantilla que mencione el pedido concreto.</p>
+            <p class="st"><b>4)</b>Dime cómo medir cuántos avisos acaban en venta al mes.</p>
+            <p>Dime en cada paso qué claves necesito y cómo las consigo.<span id="caret"></span></p>
+          </div>
+          <div class="sheen" id="sh0"></div>
+        </div>
+
+        <div class="mascota-box" id="mbox"><!--MASCOT--></div>
+      </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="gsap.min.js"></script><!-- GSAP: lo copia scaffold.sh desde _kit/ -->
+<script src="demo.js"></script>
+<script>
+window.__timelines = window.__timelines || {};
+var DUR = 2.171, FX = 480, FY = 710, VPTOP = 190;
+var $ = function(id){ return document.getElementById(id); };
+
+/* cámara: el lienzo coincide con la pantalla en el plano final (cx 480, cy 710, s 1) */
+var view = D.Cam($('cam'), FX, FY - VPTOP, {cx:480, cy:740, s:0.86, r:-2}, $('dotcam'), FY);
+/* La mascota asoma por la esquina superior derecha, sentado en el borde de la cabecera (no tapa texto) */
+var mas = D.Mascot($('mbox'), {x:838, y:298, w:92, blinks:[0.5, 1.7], talk:[[0.05,0.9]]});
+
+function render(){
+  var t = tl.time();
+  view.paint(); mas.render(t);
+  gsap.set('#caret', {opacity: (Math.floor(t*2.4) % 2) ? 0.15 : 1});
+}
+var tl = gsap.timeline({paused:true, onUpdate:render});
+
+/* 0.00 "Lo haces con este prompt,": la tarjeta YA está (inclinada) y se asienta plana en 0,45 s */
+D.enter3d(tl, '#pcard', 0, {rx:18, ry:-10, z:-160, y:40, a0:1, dur:0.45, ir:true});
+view.fly(tl, {cx:480, cy:710, s:1, r:0}, 0, 0.45, 'power3.out', 1.2);
+D.sheen(tl, '#sh0', 0.12, 0.5);
+/* La mascota: se asoma y se queda */
+tl.fromTo(mas, {k:0}, {k:1, duration:0.3, ease:'back.out(2)', immediateRender:true}, 0.1);
+tl.to(mas, {look:-1, duration:0.2, ease:'power2.out'}, 0.4);
+tl.to(mas, {hop:0.35, duration:0.14, ease:'power2.out'}, 0.95);
+tl.to(mas, {hop:0, duration:0.18, ease:'power2.in'}, 1.1);
+/* a partir de 0,45 s NADA se mueve salvo La mascota respirando y el cursor: se puede pausar y leer */
+
+tl.set({}, {}, DUR);
+render();
+window.__timelines["c06"] = tl;
+</script>
+</body></html>

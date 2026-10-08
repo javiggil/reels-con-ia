@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="es">
+<head><meta charset="utf-8"/>
+<title>Ejemplo ALFA losa - 150 clientes, 40 euros de media (datos ficticios)</title>
+<link rel="stylesheet" href="demo.css"/>
+<style>
+  html,body{background:transparent;}
+  #slab{left:60px;top:400px;width:840px;height:470px;}
+  #cam{z-index:1;}
+  #canvas{width:1800px;height:470px;}
+  .dots{left:-600px;top:-400px;width:3000px;height:1300px;}
+
+  /* estación A: suscriptores */
+  .tx{position:absolute;left:40px;top:40px;width:86px;height:86px;border-radius:20px;box-shadow:0 0 0 3px #1C1A17, 5px 6px 0 3px #1C1A17;overflow:hidden;}
+  .tx svg{width:86px;height:86px;display:block;}
+  .txn{position:absolute;left:146px;top:44px;font:700 44px "Fraunces",serif;color:#1C1A17;font-variation-settings:"opsz" 144,"SOFT" 30;}
+  .txe{position:absolute;left:44px;top:366px;font-size:17px;}
+  #n150{position:absolute;left:34px;top:146px;font-size:200px;color:#1C1A17;}
+  .lab150{position:absolute;left:44px;top:396px;font-size:16px;color:#6A5C55;}
+  #grid{position:absolute;left:372px;top:44px;width:430px;height:382px;}
+  .sd{position:absolute;width:19px;height:19px;border-radius:50%;box-shadow:0 0 0 2px #1C1A17;}
+
+  /* estación B: la media */
+  #pay{position:absolute;left:960px;top:40px;width:780px;height:390px;}
+  #n40w{position:absolute;left:24px;top:6px;display:flex;align-items:flex-end;gap:10px;}
+  #n40{font-size:210px;color:#1C1A17;}
+  .unit{font:400 80px "Anton",sans-serif;color:#1C1A17;line-height:1;padding-bottom:22px;}
+  .media{position:absolute;left:30px;top:222px;font-size:58px;white-space:nowrap;}
+  .proof{position:absolute;left:30px;top:326px;font-size:19px;line-height:1.5;color:#6A5C55;white-space:nowrap;}
+  .proof b{color:#1C1A17;font-weight:700;}
+  .proof i{font-style:normal;color:#354B98;}
+  #ul{position:absolute;left:94px;top:292px;width:200px;height:22px;overflow:visible;}
+  .glow.green#g40{left:40px;top:-60px;width:520px;height:520px;}
+  #fx{position:absolute;left:0;top:0;}
+  /* La mascota asoma por el borde superior de la losa (coords de pantalla) */
+  #mbox{z-index:30;}
+</style></head>
+<body>
+<div id="root" data-composition-id="c01" data-start="0" data-duration="3.096" data-width="2160" data-height="3840">
+  <div id="stage" class="clip" data-start="0" data-duration="3.096" data-track-index="1">
+    <div class="world" data-layout-allow-overflow data-layout-allow-overlap>
+      <div class="slab" id="slab" data-layout-allow-overflow data-layout-allow-overlap>
+        <div id="cam"><div id="canvas" data-layout-allow-overflow data-layout-allow-overlap>
+          <div class="dots"></div>
+
+          <div class="tx"><!--PART:ejemplo-logo--></div>
+          <div class="txn">Tienda Demo</div>
+          <div class="txe ey">clientes activos</div>
+          <div id="n150" class="num"></div>
+          <div class="lab150 mono">[datos de ejemplo, ficticios]</div>
+          <div id="grid"></div>
+
+          <div id="pay">
+            <div class="glow green" id="g40"></div>
+            <div id="n40w"><div id="n40" class="num"></div><div class="unit" id="unit">€</div></div>
+            <div class="media hdi" id="media">de <em class="verm">media</em></div>
+            <svg id="ul" viewBox="0 0 200 22" fill="none"><path id="ulp" d="M4 14 C 40 5, 80 19, 110 11 S 170 6, 196 12" stroke="#354B98" stroke-width="6" stroke-linecap="round"/></svg>
+            <div class="proof mono" id="proof"><b>6.000 €</b> al mes <i>÷</i> <b>150</b> clientes <i>=</i> <b>40 €</b><br/>cálculo propio · datos de ejemplo, ficticios</div>
+          </div>
+          <div id="fx"></div>
+        </div></div>
+      </div>
+      <div class="mascota-box" id="mbox"><!--MASCOT--></div>
+    </div>
+  </div>
+</div>
+
+<script src="gsap.min.js"></script><!-- GSAP: lo copia scaffold.sh desde _kit/ (origen: cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js) -->
+<script src="demo.js"></script>
+<script>
+window.__timelines = window.__timelines || {};
+var DUR = 3.096;
+var $ = function(id){ return document.getElementById(id); };
+
+/* rejilla de 150 clientes: 16 x 10 */
+var grid = $('grid'), SD = [], COLS = ['#FFFDF8','#FFFDF8','#FFFDF8','#E9DCC7','#354B98','#fe4629'];
+var R = D.rng(150);
+for (var i=0;i<150;i++){
+  var e = document.createElement('div'); e.className = 'sd';
+  var c = i%16, r = Math.floor(i/16);
+  e.style.left = (c*27)+'px'; e.style.top = (r*29.5)+'px';
+  var k = R(); e.style.background = k<0.12 ? '#fe4629' : (k<0.3 ? '#354B98' : (k<0.5 ? '#F5B82E' : '#FFFDF8'));
+  grid.appendChild(e); SD.push(e);
+}
+var o150 = D.Odometer($('n150'), '000');
+var o40 = D.Odometer($('n40'), '00');
+
+var view = D.Cam($('cam'), 420, 235, {cx:420, cy:235, s:1.0, r:0});
+/* La mascota en coords de PANTALLA, sentado en el borde superior de la losa */
+var mas = D.Mascot($('mbox'), {x:830, y:414, w:118, blinks:[0.5, 2.0]});
+var coins = D.Burst($('fx'), {x:1260, y:170, n:24, seed:40, t0:2.22, shape:'bill', colors:['#2ece7d','#8FD9A8','#2ece7d'], size:26, speed:820, spread:2.6, gravity:1500, life:1.0});
+var gold  = D.Burst($('fx'), {x:1260, y:170, n:16, seed:31, t0:2.24, shape:'coin', colors:['#F5B82E'], size:26, speed:700, spread:2.8, gravity:1500, life:1.0});
+/* monedas que viajan de la rejilla a la media (determinista) */
+var FXL = $('fx'), FLOW = [], RR = D.rng(9);
+for (var j=0;j<14;j++){ var m = document.createElement('div'); m.className='pt';
+  m.style.width=m.style.height='22px'; m.style.borderRadius='50%'; m.style.background='#F5B82E'; m.style.boxShadow='0 0 0 2px #1C1A17';
+  FXL.appendChild(m); FLOW.push({e:m, x0:420+RR()*400, y0:60+RR()*340, t0:1.1+j*0.055, d:0.55+RR()*0.15}); }
+
+var N = {a:0, b:0};
+function render(){
+  var t = tl.time();
+  view.paint(); mas.render(t); coins.update(t); gold.update(t);
+  o150.render(N.a); o40.render(N.b);
+  var n = Math.round(N.a);
+  for (var i=0;i<150;i++){ var on = i < n; SD[i].style.opacity = on ? 1 : 0.12; SD[i].style.transform = on ? 'scale(1)' : 'scale(.55)'; }
+  for (var j=0;j<FLOW.length;j++){ var f = FLOW[j], u = (t - f.t0)/f.d;
+    if (u<0 || u>1){ f.e.style.opacity = 0; continue; }
+    var x = D.lerp(f.x0, 1200, D.ss(u)), y = D.lerp(f.y0, 200, D.ss(u)) - Math.sin(Math.PI*u)*150;
+    f.e.style.opacity = 1; f.e.style.transform = 'translate('+x+'px,'+y+'px) scale('+(1-0.4*u)+')'; }
+}
+var tl = gsap.timeline({paused:true, onUpdate:render});
+
+gsap.set(['#unit','#media','#proof','#g40'], {autoAlpha:0});
+var UL = $('ulp'); var L = UL.getTotalLength(); UL.style.strokeDasharray = L+' '+L; gsap.set(UL, {strokeDashoffset:L});
+gsap.set(mas, {k:0});
+
+/* t=0 la losa YA está: solo asiento */
+tl.fromTo('#slab', {scale:0.975, y:12, transformOrigin:'50% 50%'}, {scale:1, y:0, duration:0.4, ease:'expo.out', immediateRender:true}, 0);
+tl.to(mas, {k:1, duration:0.3, ease:'back.out(2)'}, 0.05);
+tl.to(mas, {look:-1, duration:0.2, ease:'power2.out'}, 0.1);
+
+/* "150 pagan esto": el contador y la rejilla se llenan a toda velocidad */
+tl.to(N, {a:150, duration:0.95, ease:'power2.out'}, 0.06);
+tl.fromTo('#n150', {scale:1.08, transformOrigin:'0% 50%'}, {scale:1, duration:0.3, ease:'expo.out', immediateRender:false}, 1.0);
+tl.fromTo('#grid', {scale:1.03, transformOrigin:'50% 50%'}, {scale:1, duration:0.3, ease:'expo.out', immediateRender:false}, 1.0);
+tl.to(mas, {sq:1, duration:0.07, ease:'power2.in'}, 1.0);
+tl.to(mas, {sq:0, duration:0.2, ease:'power2.out'}, 1.08);
+
+/* "a unos 40": cada uno paga: monedas a la derecha, paneo */
+view.fly(tl, {cx:1300, cy:235, s:1.0}, 1.1, 0.62, 'power3.inOut', 2.6);
+tl.to(mas, {x:790, duration:0.6, ease:'power3.inOut'}, 1.1);
+tl.to(mas, {look:1, duration:0.2, ease:'power2.out'}, 1.25);
+tl.to(N, {b:40, duration:0.95, ease:'power2.out'}, 1.28);
+tl.to('#unit', {autoAlpha:1, duration:0.2, ease:'power2.out'}, 1.7);
+
+/* 2.20 remate: flash verde + billetes */
+tl.to('#g40', {autoAlpha:1, duration:0.3, ease:'expo.out'}, 2.2);
+tl.fromTo('#n40', {color:'#2ece7d', scale:1.12, transformOrigin:'50% 80%'}, {color:'#1C1A17', scale:1, duration:0.5, ease:'expo.out', immediateRender:false}, 2.22);
+tl.to(mas, {hop:1, duration:0.18, ease:'power2.out'}, 2.22);
+tl.to(mas, {hop:0, duration:0.22, ease:'power2.in'}, 2.41);
+
+/* "al mes de media." */
+D.stamp(tl, '#media', 2.32, -4);
+D.draw(tl, UL, 2.4, 0.35, 'power1.inOut');
+tl.fromTo('#proof', {autoAlpha:0, y:10}, {autoAlpha:1, y:0, duration:0.3, ease:'expo.out', immediateRender:false}, 2.5);
+
+tl.set({}, {}, DUR);
+render();
+window.__timelines["c01"] = tl;
+</script>
+</body></html>

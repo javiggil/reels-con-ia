@@ -1,0 +1,111 @@
+/* demo.css · animar-reels · estilo DEMO "hecho a mano". Autorado en espacio 1080x1920 dentro de .world.
+   Es el sistema visual de EJEMPLO (ver reference/estilo-ejemplo.md): cambia las variables de :root,
+   las @font-face y los acentos para hacer el tuyo; la ESTRUCTURA (rejilla, cámara, superficies UI,
+   odómetro, partículas, cursor, losa ALFA) es genérica.
+   Lenguaje de demo de app: lienzo infinito con rejilla de puntos que viaja con la cámara, superficies UI
+   grandes con contorno de tinta + sombra dura + ambiente, entradas en 3D, brillos que barren, anillos
+   de pulso, partículas deterministas, contadores de odómetro y cursor con clic. */
+
+@font-face { font-family:"Fraunces"; font-weight:300 700; font-style:normal; font-display:block; src:url("fonts/Fraunces-var.woff2") format("woff2"); }
+@font-face { font-family:"Fraunces"; font-weight:300 700; font-style:italic;  font-display:block; src:url("fonts/Fraunces-Italic-var.woff2") format("woff2"); }
+@font-face { font-family:"Anton";    font-weight:400; font-display:block; src:url("fonts/Anton.woff2") format("woff2"); }
+@font-face { font-family:"InterVar"; font-weight:100 900; font-display:block; src:url("fonts/inter-var.woff2") format("woff2"); }
+
+:root{
+  --paper:#F4EFE6; --paper2:#ECE3D2; --card:#FFFDF8; --cream:#FBF7EE; --news:#E8DFC8;
+  --ink:#1C1A17; --ink2:#6A5C55; --ink3:#A89A8C; --line:#E2D8C6;
+  --verm:#fe4629; --ind:#354B98; --ok:#2ece7d; --okd:#1f9e5e; --gold:#F5B82E;
+  --li:#0A66C2;
+}
+
+html, body { margin:0; }
+#root { position:relative; width:2160px; height:3840px; overflow:hidden; }
+#stage { position:absolute; inset:0; }
+.world { position:absolute; left:0; top:0; width:1080px; height:1920px; transform:scale(2); transform-origin:0 0; }
+
+/* papel crema LIMPIO (sin grano ni viñeta: en 4K enturbian el papel) */
+.paper { position:absolute; inset:0; background:radial-gradient(120% 90% at 50% 38%, #F6F1E8 0%, #ECE3D2 100%); }
+
+/* cámara prezi v2: translate(FX,FY) rotate(r) scale(s) translate(-cx,-cy): origin 0 0 */
+#cam { position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform,filter; }
+#canvas { position:absolute; left:0; top:0; }
+
+/* VENTANA de contenido (opacos): lo que se ve del lienzo, con los bordes fundidos. Título arriba
+   (y<570) y subtítulos abajo (y>1240) quedan SIEMPRE libres. Dentro: #cam con FY relativo a la ventana */
+#vp { position:absolute; left:0; top:570px; width:1080px; height:660px; overflow:hidden;
+  -webkit-mask-image:linear-gradient(to bottom, transparent 0, #000 46px, #000 calc(100% - 46px), transparent 100%);
+          mask-image:linear-gradient(to bottom, transparent 0, #000 46px, #000 calc(100% - 46px), transparent 100%); }
+#dotcam { position:absolute; left:0; top:0; transform-origin:0 0; }
+/* la rejilla de puntos vive DENTRO del lienzo: al hacer zoom los puntos crecen = hay espacio */
+.dots { position:absolute; pointer-events:none;
+  background-image:radial-gradient(circle, rgba(53,75,152,.20) 1.6px, transparent 2.2px);
+  background-size:32px 32px; }
+
+/* superficie UI (app real): contorno de tinta + sombra dura + sombra de ambiente */
+.ui-card { position:absolute; background:var(--card); border-radius:26px;
+  box-shadow:0 0 0 3px var(--ink), 10px 12px 0 3px var(--ink), 0 40px 80px -20px rgba(28,26,23,.35); overflow:hidden; }
+.ui-card.soft { box-shadow:0 0 0 3px var(--ink), 7px 8px 0 3px var(--ink), 0 24px 48px -16px rgba(28,26,23,.30); }
+.ui-bar { position:absolute; left:0; top:0; right:0; height:46px; background:var(--cream); border-bottom:3px solid var(--ink); }
+.ui-bar i { position:absolute; top:15px; width:14px; height:14px; border-radius:50%; box-shadow:0 0 0 2px var(--ink); }
+.ui-bar i:nth-child(1){ left:18px; background:#fe4629; } .ui-bar i:nth-child(2){ left:42px; background:#F5B82E; } .ui-bar i:nth-child(3){ left:66px; background:#2ece7d; }
+
+/* brillo que barre una superficie (va dentro de una .ui-card con overflow hidden) */
+.sheen { position:absolute; top:-20%; left:0; width:38%; height:140%; pointer-events:none;
+  background:linear-gradient(100deg, rgba(255,255,255,0) 0%, rgba(255,255,255,.75) 50%, rgba(255,255,255,0) 100%);
+  transform:translateX(-160%) skewX(-18deg); mix-blend-mode:soft-light; }
+
+/* resplandor local (nunca full-frame) */
+.glow { position:absolute; border-radius:50%; pointer-events:none;
+  background:radial-gradient(circle, rgba(254,70,41,.55) 0%, rgba(254,70,41,.18) 40%, rgba(254,70,41,0) 70%); }
+.glow.amber { background:radial-gradient(circle, rgba(255,170,60,.60) 0%, rgba(255,170,60,.20) 42%, rgba(255,170,60,0) 70%); }
+.glow.green { background:radial-gradient(circle, rgba(46,206,125,.55) 0%, rgba(46,206,125,.18) 42%, rgba(46,206,125,0) 70%); }
+.glow.ind { background:radial-gradient(circle, rgba(53,75,152,.40) 0%, rgba(53,75,152,.12) 42%, rgba(53,75,152,0) 70%); }
+
+/* anillo de pulso / retícula */
+.ring { position:absolute; border-radius:50%; border:4px solid var(--verm); pointer-events:none; opacity:0; }
+
+/* avatares genéricos (nadie real que la voz no haya presentado) */
+.av { position:absolute; border-radius:50%; overflow:hidden; box-shadow:0 0 0 3px var(--ink); background:#E9DCC7; }
+.av svg { width:100%; height:100%; display:block; }
+
+/* chip / pastilla */
+.chip { position:absolute; display:flex; align-items:center; gap:10px; padding:0 20px; height:52px; border-radius:26px;
+  background:var(--card); box-shadow:0 0 0 3px var(--ink), 5px 6px 0 3px var(--ink);
+  font:600 22px "InterVar",Inter,sans-serif; color:var(--ink); white-space:nowrap; }
+
+/* tipografía */
+.ey  { font-family:"InterVar",Inter,sans-serif; font-weight:700; letter-spacing:.14em; text-transform:uppercase; color:var(--ink2); }
+.hd  { font-family:"Fraunces",serif; font-weight:700; color:var(--ink); font-variation-settings:"opsz" 144,"SOFT" 30,"WONK" 1; }
+.hdi { font-family:"Fraunces",serif; font-style:italic; font-weight:600; color:var(--ink); }
+.mono{ font-family:"JetBrains Mono",ui-monospace,Menlo,monospace; color:var(--ink); }
+.ui  { font-family:"InterVar",Inter,sans-serif; color:var(--ink); }
+.num { font-family:"Anton",sans-serif; color:var(--verm); line-height:1; }
+.verm{ color:var(--verm); } .ind{ color:var(--ind); } .okc{ color:var(--okd); }
+
+/* sello editorial (Fraunces itálica, NUNCA rotulador) */
+.seal { position:absolute; font-family:"Fraunces",serif; font-style:italic; font-weight:600; color:var(--ink); white-space:nowrap;
+  background:var(--cream); box-shadow:0 0 0 3px var(--ink), 5px 6px 0 3px var(--verm); padding:8px 22px; border-radius:6px; }
+.seal em { color:var(--verm); font-style:italic; }
+
+/* odómetro: cada dígito es una columna 0-9 que rueda */
+.odo { display:inline-flex; overflow:hidden; line-height:1; }
+.odo .col { display:inline-block; position:relative; overflow:hidden; height:1em; }
+.odo .strip { display:flex; flex-direction:column; }
+.odo .strip span, .odo .sep { display:block; height:1em; text-align:center; }
+
+/* partículas */
+.pt { position:absolute; left:0; top:0; pointer-events:none; will-change:transform,opacity; }
+
+/* cursor */
+.cursor { position:absolute; left:0; top:0; width:46px; height:56px; transform-origin:8px 6px; z-index:40; }
+
+/* losa ALFA horizontal: la animación se desarrolla de lado a lado dentro */
+.slab { position:absolute; background:radial-gradient(120% 120% at 50% 40%, #F7F2E9 0%, #EFE6D6 100%); border-radius:34px; overflow:hidden;
+  box-shadow:0 0 0 4px var(--ink), 12px 14px 0 4px var(--ink), 0 40px 90px -20px rgba(0,0,0,.45); }
+
+/* MASCOTA opcional (pegatina). Mete tu imagen/SVG dentro de .mascota-box (marcador <!--MASCOT-->).
+   REGLA de este estilo: si tu mascota tiene brazos, siempre pegados al cuerpo (mira menos "clip-art"). */
+.mascota-box { position:absolute; left:0; top:0; width:150px; transform-origin:0 0; z-index:30; }
+.mascota-box > * { display:block; width:100%; height:auto; overflow:visible;
+  filter: drop-shadow(2px 0 0 #FBF7EE) drop-shadow(-2px 0 0 #FBF7EE) drop-shadow(0 2px 0 #FBF7EE) drop-shadow(0 -2px 0 #FBF7EE)
+          drop-shadow(5px 6px 0 rgba(28,26,23,.22)); }

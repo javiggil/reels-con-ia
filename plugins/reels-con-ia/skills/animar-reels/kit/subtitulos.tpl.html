@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=2160, height=3840" />
+    <title>Subtitulos del reel - caja negra 4K</title>
+  </head>
+  <body>
+    <!-- ENTREGABLE 1 · SUBTITULOS "CAJA NEGRA"  ·  PLANTILLA
+         =====================================================================
+         SUSTITUIR (y nada más):
+           1. <title>                       nombre del reel
+           2. este comentario entero        por el registro REAL del episodio
+           3. data-duration (x2)            = LAST_END + ~0,06 s de cola
+           4. el array STARTS               lo escupe blocks.json
+           5. var LAST_END                  el de verifica-bordes.py
+           6. tl.set({}, {}, <duracion>)    la misma que data-duration
+         =====================================================================
+
+         El comentario que va aquí ES EL REGISTRO DEL EPISODIO, no adorno. Escribe:
+           - nº de bloques, de qué a qué segundo, y el más corto / media / más largo
+           - de dónde salen los TIMINGS: whisper large-v3 (-l es -nfa -ml 1
+             --split-on-word) para el TEXTO, y alineacion forzada CTC (torchaudio
+             MMS_FA) para los TIEMPOS. Di cuánto se desviaba el DTW en ESTE audio
+             (mediana y máximo): es el dato que justifica no haberlo usado.
+           - el ARRANQUE y el FINAL verificados contra la envolvente, con los dB
+           - CADA correccion al ASR y COMO se decidio (recorte + whisper acotado,
+             o score CTC). Nunca "se corrigio": siempre por qué.
+           - las desviaciones del guion que se dejaron tal cual porque se dijeron así al grabar
+
+         Salida: fondo TRANSPARENTE -> MOV ProRes 4444 para Final Cut.
+         NATIVO 2160x3840, 60 fps, sin audio y sin ningún otro elemento.
+    -->
+
+    <div id="root" data-composition-id="captions" data-start="0"
+         data-duration="0.00" data-width="2160" data-height="3840">
+      <div id="caption-track" class="clip" data-start="0"
+           data-duration="0.00" data-track-index="1"></div>
+
+      <style>
+        @font-face {
+          font-family: "InterVar";
+          src: url("fonts/inter-var.woff2") format("woff2");
+          font-weight: 100 900;
+          font-style: normal;
+          font-display: block;
+        }
+
+        html, body { margin: 0; background: transparent; }
+
+        #root {
+          position: relative;
+          width: 2160px;
+          height: 3840px;
+          overflow: hidden;
+          background: transparent;
+        }
+
+        #caption-track {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 2480px;
+          text-align: center;
+          padding: 0 140px;
+          box-sizing: border-box;
+        }
+
+        .cap-group {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          padding: 0 140px;
+          box-sizing: border-box;
+          text-align: center;
+          opacity: 0;
+        }
+
+        .cap-line {
+          display: inline;
+          background: #000000;
+          color: #ffffff;
+          font-family: "InterVar", Inter, "Helvetica Neue", Arial, sans-serif;
+          font-weight: 390;
+          font-variation-settings: "wght" 390;
+          font-size: 120px;
+          line-height: 1.55;
+          letter-spacing: 0;
+          padding: 0.06em 0 0 0;
+          border-radius: 0;
+          -webkit-font-smoothing: antialiased;
+          -moz-osx-font-smoothing: grayscale;
+          text-rendering: geometricPrecision;
+          -webkit-box-decoration-break: clone;
+          box-decoration-break: clone;
+        }
+      </style>
+
+      <!-- GSAP local (lo baja nuevo-reel.sh); alternativa CDN:
+           https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js -->
+      <script src="gsap.min.js"></script>
+      <script>
+        window.__timelines = window.__timelines || {};
+
+        // <- blocks.json. Marca los beats con comentarios (// HOOK, // JUGADA...)
+        var STARTS = [
+          { text: "Primer bloque", start: 0.280 },
+          { text: "segundo bloque", start: 0.980 }
+        ];
+
+        var LAST_END = 0.00;    // <- verifica-bordes.py
+
+        var track = document.getElementById("caption-track");
+        var tl = gsap.timeline({ paused: true });
+
+        for (var i = 0; i < STARTS.length; i++) {
+          var b = STARTS[i];
+          var end = (i + 1 < STARTS.length) ? STARTS[i + 1].start : LAST_END;
+
+          var group = document.createElement("div");
+          group.className = "cap-group";
+
+          var line = document.createElement("span");
+          line.className = "cap-line";
+          line.textContent = b.text;
+          group.appendChild(line);
+          track.appendChild(group);
+
+          // corte seco: aparece en su start, desaparece en el start del siguiente
+          tl.set(group, { opacity: 1 }, b.start);
+          tl.set(group, { opacity: 0 }, end);
+        }
+
+        // ancla el final de la timeline al final de la composicion
+        tl.set({}, {}, 0.00);
+
+        window.__timelines["captions"] = tl;
+      </script>
+    </div>
+  </body>
+</html>

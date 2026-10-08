@@ -1,0 +1,48 @@
+/* base.css · animar-reels. Sistema visual de EJEMPLO "hecho a mano" (editorial sobre papel crema). Autorado en espacio 1080x1920.
+   Se pega inline en cada clip (los clips son proyectos independientes). */
+
+@font-face { font-family:"Fraunces"; font-weight:300 700; font-style:normal; font-display:block; src:url("fonts/Fraunces-var.woff2") format("woff2"); }
+@font-face { font-family:"Fraunces"; font-weight:300 700; font-style:italic;  font-display:block; src:url("fonts/Fraunces-Italic-var.woff2") format("woff2"); }
+@font-face { font-family:"Anton";    font-weight:400; font-display:block; src:url("fonts/Anton.woff2") format("woff2"); }
+@font-face { font-family:"InterVar"; font-weight:100 900; font-display:block; src:url("fonts/inter-var.woff2") format("woff2"); }
+
+html, body { margin:0; }
+#root { position:relative; width:2160px; height:3840px; overflow:hidden; }
+#stage { position:absolute; inset:0; }
+.world { position:absolute; left:0; top:0; width:1080px; height:1920px;
+         transform:scale(2); transform-origin:0 0; }
+
+/* papel crema LIMPIO: sin grano, sin viñeta (en 4K enturbian el papel) */
+.paper { position:absolute; inset:0;
+         background:radial-gradient(120% 90% at 50% 38%, #F4EFE6 0%, #ECE3D2 100%); }
+
+/* tipografia */
+.ey  { font-family:"InterVar",Inter,sans-serif; font-weight:600; letter-spacing:.16em;
+       text-transform:uppercase; color:#6A5C55; }
+.hd  { font-family:"Fraunces",serif; font-weight:700; color:#1C1A17;
+       font-variation-settings:"opsz" 144,"SOFT" 30,"WONK" 1; }
+.hdi { font-family:"Fraunces",serif; font-style:italic; font-weight:600; color:#1C1A17; }
+.mono{ font-family:"JetBrains Mono",ui-monospace,Menlo,monospace; color:#1C1A17; }
+.ui  { font-family:"InterVar",Inter,sans-serif; color:#1C1A17; }
+.num { font-family:"Anton",sans-serif; color:#fe4629; }
+.verm{ color:#fe4629; }
+.ind { color:#354B98; }
+
+/* tarjeta die-cut sobre papel */
+.card { background:#FBF7EE; box-shadow:0 0 0 3px #E4D9C4 inset, 14px 18px 0 rgba(28,26,23,.20); }
+
+/* sello / etiqueta editorial (Fraunces italica, NUNCA rotulador) */
+.seal { font-family:"Fraunces",serif; font-style:italic; font-weight:600; color:#1C1A17;
+        background:#FBF7EE; box-shadow:0 0 0 3px #1C1A17; padding:10px 22px; display:inline-block; }
+.seal em { color:#fe4629; font-style:italic; }
+
+/* pegatina die-cut (recortes, mascota opcional) */
+.sticker { filter:
+  drop-shadow(2px 0 0 #FBF7EE) drop-shadow(-2px 0 0 #FBF7EE)
+  drop-shadow(0 2px 0 #FBF7EE) drop-shadow(0 -2px 0 #FBF7EE)
+  drop-shadow(5px 6px 0 rgba(28,26,23,.22)); }
+
+/* camara prezi: la formula analitica translate(FX-cx*s, FY-cy*s) scale(s) EXIGE
+   transform-origin 0 0. Sin el, el error es ox*(1-s): invisible con s~1 (por eso
+   no se cazo en los dias 54/55) y brutal en cuanto la escala se aleja de 1. */
+#cam { position:absolute; left:0; top:0; transform-origin:0 0; will-change:transform; }
