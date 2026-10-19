@@ -8,7 +8,7 @@
   "plugins": [
     {
       "name": "reels-con-ia",
-      "description": "Edita y anima reels con IA: recorta los silencios de tu toma y te la deja cortada en Final Cut, y saca los subtítulos y las animaciones en 4K con HyperFrames.",
+      "description": "Edita y anima reels con IA: recorta los silencios, los golpecitos y las repeticiones de tu toma y te la deja cortada en Final Cut, y saca los subtítulos y las animaciones en 4K con HyperFrames.",
       "author": { "name": "Javi Gil" },
       "source": "./plugins/reels-con-ia",
       "category": "productivity",

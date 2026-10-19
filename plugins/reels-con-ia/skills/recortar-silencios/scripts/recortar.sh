@@ -2,13 +2,16 @@
 # ============================================================================
 # recortar.sh — Recorta los silencios de un talking-head y exporta un timeline
 #               de Final Cut Pro (.fcpxml, NO destructivo) con los cortes hechos.
+#               Después lo LIMPIA (limpiar.py): fuera los golpecitos sin voz y
+#               las retomas (si repites una frase, se queda el último intento).
 #
 # Envuelve auto-editor (versión Nim 31.x). Instalar con: brew install auto-editor
 # El .fcpxml referencia el media original por ruta absoluta: cero reencode,
 # no toca el archivo fuente.
 #
-# Uso: recortar.sh <video> [--umbral 4%] [--margen 0.3s] [--smooth 0.2s,0.1s]
-#      [--agresivo] [--fps auto] [--nombre dia-0018] [--legacy] [--mp4] [--out f.fcpxml]
+# Uso: recortar.sh <video> [--umbral 12%] [--margen 0.02s] [--smooth 0.05s,0.03s]
+#      [--suave] [--solo-silencios] [--idioma es] [--fps auto] [--nombre dia-0018]
+#      [--molde export.fcpxmld] [--legacy] [--mp4] [--out f.fcpxml]
 # Exit: 0 ok · 1 uso · 2 vídeo no existe · 3 auto-editor no instalado
 #       5 sin habla / timeline vacío · 6 auto-editor falló al exportar
 # ============================================================================
@@ -19,17 +22,20 @@ uso() {
 Uso: recortar.sh <video> [opciones]
 
   <video>          Ruta al vídeo talking-head.
-  --umbral <v>     Umbral de silencio (default 8%, agresivo). Acepta % , dB o
-                   fracción. Audio con ruido de fondo → súbelo más (p.ej.
-                   10-12%). Se te come palabras flojas → bájalo (p.ej. 4%).
-  --margen <v>     Colchón alrededor del habla, en segundos (default 0.1s).
+  --umbral <v>     Umbral de silencio (default 12%, agresivo). Acepta % , dB o
+                   fracción. Aún queda silencio → súbelo (15%). Se te come
+                   palabras flojas → bájalo (8% o --suave).
+  --margen <v>     Colchón alrededor del habla, en segundos (default 0.02s).
                    Cortes que suenan bruscos o comen respiraciones → súbelo
-                   (0.3s). Dos valores: 0.3s,1s
-  --smooth <v>     Corte y clip mínimos (default 0.1s,0.05s: elimina también
-                   las pausas breves, cero aire). Más largo (0.2s,0.1s) deja
-                   algo de respiración entre frases.
-  --agresivo       Preset extra: umbral 12%, margen 0.02s, cortes 0.05s,0.03s.
-                   Máximo recorte, cero aire entre frases (más troceado).
+                   (0.1-0.3s). Dos valores: 0.3s,1s
+  --smooth <v>     Corte y clip mínimos (default 0.05s,0.03s: cero aire).
+                   Más largo (0.2s,0.1s) deja respiración entre frases.
+  --suave          Preset menos agresivo (el default antiguo): umbral 8%,
+                   margen 0.1s, cortes 0.1s,0.05s. Solo pisa lo que no fijes.
+  --agresivo       Ya es el default; se acepta por compatibilidad.
+  --solo-silencios No limpia: deja los golpecitos y las retomas (solo recorta
+                   los silencios, como la versión antigua).
+  --idioma <xx>    Idioma para transcribir las retomas (default es).
   --fps <n>        Frame rate del timeline (default: auto = el nominal del
                    vídeo). Evita el crash de Final Cut con rates raros. Fuerza
                    uno estándar si hace falta: 60, 30, 25, 24, 30000/1001…
@@ -49,12 +55,14 @@ EOF
 }
 
 # --- Bloque 1: defaults + parseo -------------------------------------------
-UMBRAL="8%"; U_SET=0
-MARGEN="0.1s"; M_SET=0
-SMOOTH="0.1s,0.05s"; S_SET=0
+UMBRAL="12%"; U_SET=0      # agresivo por defecto
+MARGEN="0.02s"; M_SET=0
+SMOOTH="0.05s,0.03s"; S_SET=0
+LIMPIAR=1                  # golpecitos y retomas fuera (limpiar.py)
+IDIOMA="es"
 FPS="auto"                 # auto = detecta el rate nominal del vídeo (evita crash de FCP)
 MOLDE=""                   # ruta a un XML exportado de FCP (modo a prueba de crash)
-AGGR=0
+SUAVE=0
 LEGACY=0
 MP4=0
 OUT=""
@@ -67,7 +75,10 @@ while [ $# -gt 0 ]; do
     --margen) [ $# -ge 2 ] || { echo "Falta el valor de --margen"; exit 1; }; MARGEN="$2"; M_SET=1; shift 2 ;;
     --smooth) [ $# -ge 2 ] || { echo "Falta el valor de --smooth"; exit 1; }; SMOOTH="$2"; S_SET=1; shift 2 ;;
     --fps)    [ $# -ge 2 ] || { echo "Falta el valor de --fps"; exit 1; };    FPS="$2";    shift 2 ;;
-    --agresivo|--agressive) AGGR=1; shift ;;
+    --agresivo|--agressive) shift ;;
+    --suave)  SUAVE=1; shift ;;
+    --solo-silencios) LIMPIAR=0; shift ;;
+    --idioma) [ $# -ge 2 ] || { echo "Falta el valor de --idioma"; exit 1; }; IDIOMA="$2"; shift 2 ;;
     --nombre) [ $# -ge 2 ] || { echo "Falta el valor de --nombre"; exit 1; }; NOMBRE="$2"; shift 2 ;;
     --molde)  [ $# -ge 2 ] || { echo "Falta el valor de --molde"; exit 1; };  MOLDE="$2";  shift 2 ;;
     --out)    [ $# -ge 2 ] || { echo "Falta el valor de --out"; exit 1; };    OUT="$2";    shift 2 ;;
@@ -79,12 +90,12 @@ while [ $# -gt 0 ]; do
   esac
 done
 
-# Preset --agresivo: recorta más (umbral algo más alto, margen tenso y cortes
-# más cortos). Solo pisa lo que NO hayas fijado tú a mano.
-if [ "$AGGR" = 1 ]; then
-  [ "$U_SET" = 0 ] && UMBRAL="12%"
-  [ "$M_SET" = 0 ] && MARGEN="0.02s"
-  [ "$S_SET" = 0 ] && SMOOTH="0.05s,0.03s"
+# Preset --suave: el default antiguo (deja algo de aire). Solo pisa lo que NO
+# hayas fijado tú a mano.
+if [ "$SUAVE" = 1 ]; then
+  [ "$U_SET" = 0 ] && UMBRAL="8%"
+  [ "$M_SET" = 0 ] && MARGEN="0.1s"
+  [ "$S_SET" = 0 ] && SMOOTH="0.1s,0.05s"
 fi
 
 # --- Bloque 2: validaciones (gates) ----------------------------------------
@@ -98,6 +109,10 @@ command -v auto-editor >/dev/null 2>&1 || {
 HAVE_FFPROBE=1; command -v ffprobe >/dev/null 2>&1 || HAVE_FFPROBE=0
 HAVE_XMLLINT=1; command -v xmllint >/dev/null 2>&1 || HAVE_XMLLINT=0
 SKILL_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "$LIMPIAR" = 1 ] && ! command -v python3 >/dev/null 2>&1; then
+  echo "Aviso: sin python3 no puedo quitar golpecitos ni retomas; solo recorto silencios."
+  LIMPIAR=0
+fi
 if [ -n "$MOLDE" ]; then
   [ -e "$MOLDE" ] || { echo "No existe el molde: $MOLDE"; exit 2; }
   command -v python3 >/dev/null 2>&1 || { echo "El modo --molde necesita python3."; exit 3; }
@@ -138,7 +153,7 @@ AE_EDIT=( "$VIDEO" --edit "audio:threshold=$UMBRAL" --margin "$MARGEN" )
 
 echo ""
 echo "=============================================================="
-echo "  Recortando silencios$([ "$AGGR" = 1 ] && echo '  [modo agresivo]')"
+echo "  Recortando silencios$([ "$SUAVE" = 1 ] && echo '  [suave]')$([ "$LIMPIAR" = 1 ] && echo ' + golpecitos y retomas')"
 echo "  Vídeo : $BASE"
 echo "  Umbral: $UMBRAL   Margen: $MARGEN   Cortes: ${SMOOTH:-0.2s,0.1s (nativo)}"
 echo "  FPS   : ${FPS:-auto-editor}   FCPXML: $([ -n "$MOLDE" ] && echo '1.14 (molde)' || { [ "$LEGACY" = 1 ] && echo 1.10 || echo 1.11; })"
@@ -227,6 +242,25 @@ except Exception:
 PY
 fi
 
+# --- Bloque 5d: limpieza (golpecitos y retomas) ----------------------------
+# El timeline solo-silencios se guarda en <out>-tomas/silencios.fcpxml (también
+# importable, por si acaso) y limpiar.py escribe el entregable limpio en $OUT,
+# con un segundo proyecto «<nombre> · descartes» con lo que ha quitado.
+WORK=""
+if [ "$LIMPIAR" = 1 ]; then
+  WORK="${OUT%.fcpxml}-tomas"
+  mkdir -p "$WORK" && mv -f "$OUT" "$WORK/silencios.fcpxml"
+  echo ""
+  echo "  Limpiando golpecitos y retomas (whisper por bloques)..."
+  python3 "$SKILL_DIR/limpiar.py" analizar "$WORK/silencios.fcpxml" "$VIDEO" "$WORK" "$OUT" --idioma "$IDIOMA"
+  L_RC=$?
+  if [ "$L_RC" -ne 0 ] || [ ! -s "$OUT" ]; then
+    echo "  Aviso: la limpieza falló (rc=$L_RC); entrego el timeline solo con los silencios recortados."
+    cp -f "$WORK/silencios.fcpxml" "$OUT"
+    LIMPIAR=0
+  fi
+fi
+
 # --- Bloque 6: reporte (fuente de verdad = el propio .fcpxml) --------------
 # Suma duraciones tipo "N/Ds" o "Ns" que llegan por stdin -> segundos totales.
 sum_dur() { awk -F'[/s]' '{ if($2!="" && $2+0!=0) s+=$1/$2; else s+=$1 } END{ printf "%.3f", s+0 }'; }
@@ -237,8 +271,11 @@ BEFORE=""; [ "$HAVE_FFPROBE" = 1 ] && BEFORE="$(ffprobe -v error -show_entries f
 
 N_SEG=""; AFTER=""
 if [ "$HAVE_XMLLINT" = 1 ]; then
-  N_SEG="$(xmllint --xpath 'count(//asset-clip)' "$OUT" 2>/dev/null | awk '{printf "%d", $1+0}')"
-  AFTER="$(xmllint --xpath '//asset-clip/@duration' "$OUT" 2>/dev/null | grep -oE '[0-9]+(/[0-9]+)?s' | sum_dur)"
+  # solo el primer proyecto: el segundo es el de descartes
+  N_SEG="$(xmllint --xpath 'count((//project)[1]//asset-clip)' "$OUT" 2>/dev/null | awk '{printf "%d", $1+0}')"
+  AFTER="$(xmllint --xpath '(//project)[1]//asset-clip/@duration' "$OUT" 2>/dev/null | grep -oE '[0-9]+(/[0-9]+)?s' | sum_dur)"
+  MID=""
+  [ -n "$WORK" ] && MID="$(xmllint --xpath '(//project)[1]//asset-clip/@duration' "$WORK/silencios.fcpxml" 2>/dev/null | grep -oE '[0-9]+(/[0-9]+)?s' | sum_dur)"
 fi
 
 # Gate "sin habla": timeline vacío -> el umbral es demasiado alto o no hay audio.
@@ -257,8 +294,9 @@ if [ -n "$BEFORE" ]; then
 else
   echo "  Antes     : (ffprobe no disponible)"
 fi
+[ -n "$MID" ] && echo "  Sin pausas: $(fmt "$MID")  (${MID}s)"
 if [ -n "$AFTER" ]; then
-  echo "  Después   : $(fmt "$AFTER")  (${AFTER}s)"
+  echo "  Después   : $(fmt "$AFTER")  (${AFTER}s)$([ -n "$MID" ] && echo '  ← sin golpecitos ni retomas')"
   if [ -n "$BEFORE" ]; then
     CUT="$(awk -v b="$BEFORE" -v a="$AFTER" 'BEGIN{printf "%.3f", b-a}')"
     PCT="$(awk -v b="$BEFORE" -v a="$AFTER" 'BEGIN{ if(b+0>0) printf "%.1f", (b-a)/b*100; else print "0" }')"
@@ -282,7 +320,12 @@ if [ "$MP4" = 1 ]; then
   echo "  Renderizando MP4 de preview a media resolución (para revisar los cortes)..."
   # --scale 0.5 => a la mitad (p.ej. 4K -> 1080p): rápido y suficiente para
   # eyeballar que no corta palabras. El master de verdad lo montas en FCP.
-  if auto-editor "${AE_EDIT[@]}" --scale 0.5 -o "$MP4OUT"; then
+  if [ "$LIMPIAR" = 1 ]; then
+    python3 "$SKILL_DIR/limpiar.py" preview "$WORK" "$VIDEO" "$MP4OUT"
+  else
+    auto-editor "${AE_EDIT[@]}" --scale 0.5 -o "$MP4OUT"
+  fi
+  if [ $? -eq 0 ]; then
     echo "  Preview MP4: $MP4OUT"
   else
     echo "  Aviso: el preview MP4 falló, pero el .fcpxml ya está listo."
@@ -298,6 +341,7 @@ echo ""
 echo "  Listo. Importa en Final Cut:  File > Import > XML…"
 echo "  FCPXML  : $OUT"
 echo "  Proyecto: $FCP_NAME   (así aparece el timeline en Final Cut)"
+[ "$LIMPIAR" = 1 ] && echo "  Tomas   : $WORK/tomas.md   (qué se ha quitado y por qué; descartes en «$FCP_NAME · descartes»)"
 echo "  Formato : ${FMT_DIMS:-?}   (orientación real del vídeo)"
 echo "  (No muevas ni renombres el vídeo original antes de importar: rompería el enlace.)"
 echo ""
